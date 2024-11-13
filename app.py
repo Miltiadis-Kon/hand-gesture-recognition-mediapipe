@@ -14,6 +14,7 @@ import mediapipe as mp
 from utils import CvFpsCalc
 from model import KeyPointClassifier
 from model import PointHistoryClassifier
+import socket
 
 
 def get_args():
@@ -490,6 +491,10 @@ def draw_bounding_rect(use_brect, image, brect):
 
     return image
 
+def send_data(info):
+    # Info has this format Hand:Gesture ex. Left:Scissors
+    sock.sendto(info.encode(), ('localhost', 8080))
+
 
 def draw_info_text(image, brect, handedness, hand_sign_text,
                    finger_gesture_text):
@@ -499,6 +504,8 @@ def draw_info_text(image, brect, handedness, hand_sign_text,
     info_text = handedness.classification[0].label[0:]
     if hand_sign_text != "":
         info_text = info_text + ':' + hand_sign_text
+        #print(info_text) # LOG GESTURE
+        send_udp_string(hand_sign_text) #IMPORTANT Send gesture to Unity
     cv.putText(image, info_text, (brect[0] + 5, brect[1] - 4),
                cv.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 1, cv.LINE_AA)
 
@@ -539,5 +546,22 @@ def draw_info(image, fps, mode, number):
     return image
 
 
+import socket
+import time
+
+# UDP server settings
+UDP_IP = "127.0.0.1"  # IP address of the Unity application
+UDP_PORT = 8000       # Port number the Unity app is listening on
+
+# Function to send a string over UDP
+def send_udp_string(message):
+    byte_msg = message.encode()  # Encode the string to bytes
+    sock.sendto(byte_msg, (UDP_IP, UDP_PORT))
+    print(f"Sent message: {message}")
+
+
 if __name__ == '__main__':
+    # Create a UDP socket
+    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+       
     main()
